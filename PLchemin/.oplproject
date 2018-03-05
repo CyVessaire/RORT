@@ -6,6 +6,8 @@
 			</ref>
 			<ref type="data" name="PLchemin.dat">
 			</ref>
+			<ref type="data" name="sstour.dat">
+			</ref>
 		</config>
 	</configs>
 	
