@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ASCII"?><project>
+	<version>1.0</version>
+	<configs>
+		<config default="true" name="Configuration 1" category="opl">
+			<ref type="model" name="PLcheminRelax.mod">
+			</ref>
+			<ref type="data" name="exemple1.dat">
+			</ref>
+			<ref type="data" name="ss_tours.dat">
+			</ref>
+			<ref type="data" name="valides.dat">
+			</ref>
+		</config>
+	</configs>
+	
+</project>

@@ -1,15 +1,19 @@
 /*********************************************
  * OPL 12.5 Model
  * Author: seb
- * Creation Date: 18 févr. 2018 at 19:33:51
+ * Creation Date: 6 mars 2018 at 15:31:27
  *********************************************/
 
-  int n = ...;
+ int n = ...;
  range Rn = 1..n;
  int a[Rn][Rn] = ...;
+ int vois_essai[Rn][Rn] = ...;
  
  tuple Subtour { int size; int subtour[Rn]; }
 {Subtour} subtours = ...;
+
+ tuple Vsets { int size; int sommet; int voisins[Rn]; }
+{Vsets} ensV = ...;
 
  dvar int s[Rn] in 0..1; 
  dvar int x[Rn][Rn] in 0..1;
@@ -46,6 +50,11 @@ subject to{
 	forall(i in 2..n)
 	  connexe: sum(j in Rn) x[j][i] == 1;
 	  
+	// Inégalités valides 
+	forall(i in 1..n, v in ensV: v.sommet == i)
+		ineqdegre: (v.size - 2)*s[i] >= sum(j in Rn) v.voisins[j]*(x[i][j] + x[j][i]) - 2;
+	
+	
 	// Definition de la contrainte en sous tour
 	forall (s in subtours)
        sstour: sum (i in Rn, j in Rn : s.subtour[i] != 0 && s.subtour[j] != 0 && s.subtour[i] != s.subtour[j])
@@ -119,23 +128,68 @@ execute {
 	}	
 }	
 
-/*****************************************************************************
- *
- * SCRIPT
- * 
- *****************************************************************************/
+main{
+	  var status = 0;
+	  thisOplModel.generate();
+	
+	  var RC_EPS = 1.0e-6;
+	
+	  var masterDef = thisOplModel.modelDefinition;
+	  var masterCplex = cplex;
+	  var masterData = thisOplModel.dataElements;
 
-main {
-    var opl = thisOplModel
-    var mod = opl.modelDefinition;
-    var dat = opl.dataElements;
-
-    var status = 0;
-    var it =0;
-    while (1) {
+	  var best;
+	  var curr = Infinity;
+	
+	  while ( best != curr ) {
+	    best = curr;
+	
+	    var masterOpl = new IloOplModel(masterDef, masterCplex);
+	    masterOpl.addDataSource(masterData);
+	    masterOpl.generate();
+	    masterOpl.convertAllIntVars();
+	        
+	    writeln("Solve master.");
+	    if ( masterCplex.solve() ) {
+	      curr = masterCplex.getObjValue();
+	      writeln();
+	      writeln("OBJECTIVE: ",curr);
+	    } 
+	    else {
+	      writeln("No solution!");
+	      masterOpl.end();
+	      break;
+	    }
+	
+	    // Prepare the next iteration:
+	    current_sol_x = masterOpl.x.solutionValue
+	    current_sol_s = masterOpl.s.solutionValue
+	    for (i in masterOpl.Rn){
+		    var sizeV = 0
+		    for (j in masterOpl.Rn){
+		    	if (current_sol_x[i][j] + current_sol_x[j][i] > current_sol_s[i]){
+			    	masterOpl.vois_essai[i][j] = 1;
+			    	sizeV += 1;
+     			}		    	
+     			else{
+     				masterOpl.vois_essai[i][j] = 0;
+     			}
+    		}
+    		masterData.ensV.add(sizeV, i, masterOpl.vois_essai[i]);	    
+   		}	    
+   		
+	    //masterOpl.end();
+	  masterOpl.unconvertAllIntVars();
+	  }
+	  writeln("Relaxed model search end.");
+	  
+	  
+	  var status = 0;
+      var it =0;
+	  while (1) {
         var cplex1 = new IloCplex();
-        opl = new IloOplModel(mod,cplex1);
-        opl.addDataSource(dat);
+        opl = new IloOplModel(masterDef,cplex1);
+        opl.addDataSource(masterData);
         opl.generate();
         it++;
         writeln("Iteration ",it, " with ", opl.subtours.size, " subtours.");
@@ -147,7 +201,7 @@ main {
         }
         opl.postProcess();
         writeln("Current solution : ", cplex1.getObjValue());
-        writeln("Solution value : ", opl.x.solutionValue);
+        //writeln("Solution value : ", opl.x.solutionValue);
 
         if (opl.newSubtourSize == opl.n) {
           opl.end();
@@ -155,11 +209,12 @@ main {
           break; // not found
         }
         
-        dat.subtours.add(opl.newSubtourSize, opl.newSubtour);
-        dat.subtours.add(opl.newSubtourSize2, opl.newSubtour2);
+        masterData.subtours.add(opl.newSubtourSize, opl.newSubtour);
+        masterData.subtours.add(opl.newSubtourSize2, opl.newSubtour2);
 		opl.end();
 		cplex1.end();
     }
 
     status;
 }
+

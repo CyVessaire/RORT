@@ -31,7 +31,7 @@
 
 	// Definition de s (degré sup à 3)
 	forall (i in Rn)
-		degre: n*s[i] >= sum(j in Rn) (x[i][j] + x[j][i]) - 2;
+		degre: (sum(j in Rn) a[i][j] - 2)*s[i] >= sum(j in Rn) (x[i][j] + x[j][i]) - 2;
 	
 	// Nombre d'aretes d'un arbre
 	arbre: sum(i in Rn, j in Rn) x[i][j] == (n - 1);
