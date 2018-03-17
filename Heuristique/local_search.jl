@@ -69,6 +69,10 @@ function test_delete_edge(adj_ini, adj_tree, node_1, node_2, leaf, list_node, ap
         for j in list_node[:,1]
             # teste si il existe une arête entre un noeud de l'arbre ini
             # et node_2
+            if j == node_1
+                continue
+            end
+
             if adj_ini[node_2,j] == 1
                 test[2] = true
                 if apply
@@ -322,17 +326,15 @@ function local_search(adj_ini, adj_tree, apply, verbose)
     k = 0
     if verbose
         println("Tree:")
-        for j in 1:n
-            println(adj_tree[:,j])
-        end
+        println(adj_tree)
     end
     while(loop)
         if k == iter_max
             println("Iter max attained, current solution : ")
             println("Tree:")
-            for j in 1:n
-                println(adj_tree[:,j])
-            end
+            println(adj_tree)
+            v = size(nodes, 1)
+            println("Value = $v")
             break
         end
         k += 1
@@ -340,11 +342,11 @@ function local_search(adj_ini, adj_tree, apply, verbose)
         nodes = detect_nodes(adj_ini, adj_tree) #get the list of node
 
         if size(nodes, 1) == 0
-            println("Value = 0")
+            v = size(nodes, 1)
+            println("Value = $v")
             println("Tree:")
-            for j in 1:n
-                println(adj_tree[:,j])
-            end
+            println(adj_tree)
+            println("Value = $v")
             break
         end
 
@@ -362,12 +364,20 @@ function local_search(adj_ini, adj_tree, apply, verbose)
                     continue
                 end
                 test = test_delete_edge(adj_ini, adj_tree, i, j, leaf, nodes, apply)
-                if verbose
-                    println("Vector test : ", test[1])
-                    println("Possibilities : ", test[2])
-                    println("i = ", i ," and j = ", j)
+                app = false
+                for k in 1:size(test[1],1)
+                    if test[1][k]
+                        app = apply
+                    end
                 end
-                if apply
+                if app
+                    if verbose
+                        println("Vector test : ", test[1])
+                        println("Possibilities : ", test[2])
+                        println("i = ", i ," and j = ", j)
+                    end
+                end
+                if app
                     apply_modif(i, j, adj_tree, test[1], test[2], nodes, leaf, verbose)
                     loop = true
                     break
@@ -376,38 +386,46 @@ function local_search(adj_ini, adj_tree, apply, verbose)
             if loop
                 if verbose
                     println("Tree:")
-                    for j in 1:n
-                        println(adj_tree[:,j])
-                    end
+                    println(adj_tree)
+                end
+                break
+            end
+            if !loop
+                if verbose
+                    println("Last Tree:")
+                    println(adj_tree)
+                    println("No amelioration possible")
+                    v = size(nodes, 1)
+                    println("Value = $v")
                 end
                 break
             end
         end
     end
 end
-
-#create a test : K7 adj matrix
-a = ones(Int,7,7) - eye(Int,7)
-
-b = zeros(7,7)
-b[1,2] = b[2,1] = 1
-b[1,3] = b[3,1] = 1
-b[1,4] = b[4,1] = 1
-b[2,5] = b[5,2] = 1
-b[2,6] = b[6,2] = 1
-b[2,7] = b[7,2] = 1
-b = round.(Int,b)
-
-println(a)
-println(b)
-
-#verify the correct sort by
-
-# d = [1 5; 2 3; 8 6]
-# println(sort!(d[:,2]))
-# println(d)
-# d = sortrows(d, by=x->x[2])
-# println(d)
-# println(size(d,1))
-
-local_search(a, b, true, true)
+#
+# #create a test : K7 adj matrix
+# a = ones(Int,7,7) - eye(Int,7)
+#
+# b = zeros(7,7)
+# b[1,2] = b[2,1] = 1
+# b[1,3] = b[3,1] = 1
+# b[1,4] = b[4,1] = 1
+# b[2,5] = b[5,2] = 1
+# b[2,6] = b[6,2] = 1
+# b[2,7] = b[7,2] = 1
+# b = round.(Int,b)
+#
+# println(a)
+# println(b)
+#
+# #verify the correct sort by
+#
+# # d = [1 5; 2 3; 8 6]
+# # println(sort!(d[:,2]))
+# # println(d)
+# # d = sortrows(d, by=x->x[2])
+# # println(d)
+# # println(size(d,1))
+#
+# local_search(a, b, true, true)
