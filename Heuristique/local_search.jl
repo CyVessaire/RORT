@@ -55,10 +55,20 @@ function test_delete_edge(adj_ini, adj_tree, node_1, node_2, leaf, list_node, ap
         for j in leaf
             # teste si il existe une arête entre une feuille de l'arbre ini
             # et node_2
+
             if adj_ini[node_2,j] == 1
-                test[1] = true
-                if apply
-                    L = vcat(L,transpose([node_2,j]))
+                adj_bis = copy(adj_tree)
+                adj_bis[node_1, node_2] = adj_bis[node_2, node_1] = 0
+                adj_bis[j, node_2] = adj_bis[node_2, j] = 1
+
+                G = Graph(adj_bis)
+                Dists = dijkstra_shortest_paths(G, node_1, allpaths=true).dists
+                n = size(adj_ini, 1)
+                if Dists[node_2] <= n
+                    test[1] = true
+                    if apply
+                        L = vcat(L,transpose([node_2,j]))
+                    end
                 end
             end
         end
@@ -74,9 +84,20 @@ function test_delete_edge(adj_ini, adj_tree, node_1, node_2, leaf, list_node, ap
             end
 
             if adj_ini[node_2,j] == 1
-                test[2] = true
-                if apply
-                    L = vcat(L,transpose([node_2,j]))
+
+                adj_bis = copy(adj_tree)
+                adj_bis[node_1, node_2] = adj_bis[node_2, node_1] = 0
+                adj_bis[j, node_2] = adj_bis[node_2, j] = 1
+
+                G = Graph(adj_bis)
+                Dists = dijkstra_shortest_paths(G, node_1, allpaths=true).dists
+                n = size(adj_ini, 1)
+
+                if Dists[node_2] <= n
+                    test[2] = true
+                    if apply
+                        L = vcat(L,transpose([node_2,j]))
+                    end
                 end
             end
         end
@@ -196,6 +217,8 @@ end
 function apply_modif(node_1, node_2, adj_tree, test, liste, list_node, leaf, verbose)
     remove = false
     k = 0
+    a = 0
+    b = 0
     if test[1]
         L = liste[rand(1:end),:]
         if verbose
@@ -203,6 +226,8 @@ function apply_modif(node_1, node_2, adj_tree, test, liste, list_node, leaf, ver
         end
         adj_tree[node_1, node_2] = adj_tree[node_2, node_1] = 0
         adj_tree[L[1],L[2]] = adj_tree[L[2],L[1]] = 1
+        a = L[1]
+        b = L[2]
         filter!(x->x≠L[1], leaf)
         filter!(x->x≠L[2], leaf)
         for i in 1:size(list_node,1)
@@ -232,6 +257,8 @@ function apply_modif(node_1, node_2, adj_tree, test, liste, list_node, leaf, ver
         end
         adj_tree[node_1, node_2] = adj_tree[node_2, node_1] = 0
         adj_tree[L[1],L[2]] = adj_tree[L[2],L[1]] = 1
+        a = L[1]
+        b = L[2]
         filter!(x->x≠L[1], leaf)
         for i in 1:size(list_node,1)
             if list_node[i,1] == node_1
@@ -262,6 +289,8 @@ function apply_modif(node_1, node_2, adj_tree, test, liste, list_node, leaf, ver
         end
         adj_tree[node_1, node_2] = adj_tree[node_2, node_1] = 0
         adj_tree[L[1],L[2]] = adj_tree[L[2],L[1]] = 1
+        a = L[1]
+        b = L[2]
         for i in 1:size(list_node,1)
             if list_node[i,1] == node_1
                 list_node[i,2] -= 1
@@ -292,6 +321,8 @@ function apply_modif(node_1, node_2, adj_tree, test, liste, list_node, leaf, ver
         end
         adj_tree[node_1, node_2] = adj_tree[node_2, node_1] = 0
         adj_tree[L[1],L[2]] = adj_tree[L[2],L[1]] = 1
+        a = L[1]
+        b = L[2]
         for i in 1:size(list_node,1)
             if list_node[i,1] == node_1
                 list_node[i,2] -= 1
@@ -316,18 +347,33 @@ function apply_modif(node_1, node_2, adj_tree, test, liste, list_node, leaf, ver
             end
         end
     end
+    return a,b
 end
 
 
 function local_search(adj_ini, adj_tree, apply, verbose)
     loop = true
+    tabou = zeros(5, 2)
+
     n = size(adj_ini, 1)
-    iter_max = 10
+    iter_max = 10*n
     k = 0
     if verbose
         println("Tree:")
         println(adj_tree)
     end
+
+    G = Graph(adj_tree)
+    Dists = dijkstra_shortest_paths(G, 1, allpaths=true).dists
+
+    for i in 1:n
+        if Dists[i] > n
+            println("NOT A TREE")
+            return
+        end
+    end
+
+
     while(loop)
         if k == iter_max
             println("Iter max attained, current solution : ")
@@ -363,6 +409,17 @@ function local_search(adj_ini, adj_tree, apply, verbose)
                 if (j == i || adj_tree[i,j] == 0)
                     continue
                 end
+                cont = false
+                for k in 1:size(tabou,1)
+                    if ((tabou[k,1] == i && tabou[k,2] == j) || (tabou[k,1] == j && tabou[k,2] == i))
+                        cont = true
+                        break
+                    end
+                end
+                if cont
+                    continue
+                end
+
                 test = test_delete_edge(adj_ini, adj_tree, i, j, leaf, nodes, apply)
                 app = false
                 for k in 1:size(test[1],1)
@@ -378,8 +435,29 @@ function local_search(adj_ini, adj_tree, apply, verbose)
                     end
                 end
                 if app
-                    apply_modif(i, j, adj_tree, test[1], test[2], nodes, leaf, verbose)
+                    a,b = apply_modif(i, j, adj_tree, test[1], test[2], nodes, leaf, verbose)
                     loop = true
+
+                    tabou = tabou[setdiff(1:end, 1), :]
+                    tabou = vcat(tabou, [a b])
+
+                    if verbose
+                        println(tabou)
+                    end
+
+                    G = Graph(adj_tree)
+                    Dists = dijkstra_shortest_paths(G, 1, allpaths=true).dists
+
+                    for i in 1:n
+                        if Dists[i] > n
+                            println("NOT A TREE")
+                            println(i)
+                            println("Tree:")
+                            println(adj_tree)
+                            return
+                        end
+                    end
+
                     break
                 end
             end
@@ -390,18 +468,18 @@ function local_search(adj_ini, adj_tree, apply, verbose)
                 end
                 break
             end
-            if !loop
-                if verbose
-                    println("Last Tree:")
-                    println(adj_tree)
-                    println("No amelioration possible")
-                    v = size(nodes, 1)
-                    println("Value = $v")
-                end
-                break
+        end
+        if !loop
+            if verbose
+                println("Last Tree:")
+                println(adj_tree)
+                println("No more amelioration possible")
+                v = size(nodes, 1)
+                println("Value = $v")
             end
         end
     end
+    return adj_tree
 end
 #
 # #create a test : K7 adj matrix
