@@ -1,3 +1,5 @@
+
+
 using JuMP
 using LightGraphs
 using GraphPlot
@@ -109,7 +111,7 @@ end
 function read_txt(Path)
         A = readdlm(Path, ' ')
 
-        B = A[1:size(A,1)-1,:]
+        B = A[1:size(A,1),:]
 
         n = size(B,1)
         a = round.(Int,B)
@@ -129,12 +131,15 @@ end
 function Glouton(Path)
     #read data
     n,a = read_txt(Path)
+    println(n)
+    println(a)
     # create graph G and lists we will use for discovery
     G = create_graph(a)
     # no node is selected yet.
     nodes = zeros(Int,n)
     # all nodes are not discovered yet.
     undiscovered = nodes + 1
+    println("initialisation with isthmes and branchement")
     # preprocessing  des noeuds de branchement et des isthmes
     branchements = get_artics(G)
     isthmes = get_isthmes(G)
@@ -176,15 +181,23 @@ function Glouton(Path)
             undiscovered[target] = 0
         end
     end
-
+    println("search for good points")
     # continue l'heuristique avec les autres.
     # tant que des nodes sont pas découvertes, je continue à rajouter des nodes.
+    print(undiscovered)
     while (sum(undiscovered) > 0)
+        # print("Encore:")
+        # print(sum(undiscovered))
+        # println("points a decouvrir")
         bestnode = find_best_node(n, a, undiscovered, nodes)
-        discovery = neighbors_discovery(n, a, undiscovered,  bestnode)
-        nodes[bestnode] = 1
-        for target in discovery
-            undiscovered[target] = 0
+        println(bestnode)
+        if bestnode != -1
+            discovery = neighbors_discovery(n, a, undiscovered,  bestnode)
+            print(discovery)
+            nodes[bestnode] = 1
+            for target in discovery
+                undiscovered[target] = 0
+            end
         end
     end
 
@@ -195,6 +208,7 @@ function Glouton(Path)
     # Il se trouve que ces noeud sont ordonnés par nombre de feueilles decouvertes.
     # on va creer un squelette à partir de plus cours chemins a partir du premier element de cette liste, vers les autres.
     # puis on va rajouter les feuilles en parcourant
+    println("building the skeleton of the tree")
     covered = zeros(Int, n)
     newG_tree = Graph(n)
     root = get_root(nodes, n, G)
@@ -215,6 +229,7 @@ function Glouton(Path)
         end
     end
 
+    println("building the rest of the tree")
     #maintenant on va ajouter a cet arbre, le nodes qui n'ont pas été sélectionées.
     for selected in 1:n
         println(neighbors(newG_tree, selected))
@@ -259,10 +274,11 @@ end
 
 function find_best_node(n, a, undiscovered, nodes)
     bestnode = -1
-    bestdiscovery
+    bestdiscovery = -1
     for thisnode in 1:n
-        discovery = size(neighbors_discovery(n, a, undiscovered,  node))
+        discovery = length(neighbors_discovery(n, a, undiscovered,  thisnode))
         if discovery > bestdiscovery
+            bestdiscovery = discovery
             bestnode = thisnode
         end
     end
@@ -294,7 +310,7 @@ function Dijkstra_paths(Graph, source)
     return Paths
 end
 
-G = Glouton("test01.txt")
+G = Glouton("testdata.txt")
 # G = Graph(6)
 # println(G)
 # println(adjacency_matrix(G))
