@@ -1,0 +1,13 @@
+Pour lancer l'heuristique, placer-vous dans le dossier Heuristique/ avec votre terminal, puis taper la commande:
+"julia total.jl"
+
+Il se peut qu'il soit nécessaire de changer la ligne 5 du fichier, pour avoir le path que vous désirez pour tester l'heuristique sur un fichier.
+
+Le résultat affiche le temps nécessaire pour le glouton, la valeur finale obtenue, et le temps de la recherche locale.
+
+Si vous voulez obtenir les modifications apportées par chaque partie, il suffit de remplacer le dernier "false" par "true" (il s'agit d'une option verbose)
+
+
+Vous pouvez générer automatiquement des instances en vous plaçant dans le dossier src/ , puis en lançant les scripts create_random_txt_file.jl, (puis create_dat_file.jl dans le cas ou vous souhaiter les évaluer à l'aide des PL).
+Il est possible de modifier le nom de sortie des fichiers en modifiant la ligne 4 de create_random_txt_file.jl, et la ligne 13 puis 19 de create_dat_file.jl.
+Il est également possible de modifier le nombre de points en modifiant la ligne 7 de create_random_txt_file.jl, puis la probabilité de création d'arête en modifiant le 2eme parametre de la fonction erdos_renyi(n, . ).
