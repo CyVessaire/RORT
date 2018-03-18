@@ -3,24 +3,6 @@
 using JuMP
 using LightGraphs
 using GraphPlot
-# G1 = Graph(7) # graph with 7 vertices
-#
-# # make a triangle
-# add_edge!(G1, 1, 2)
-# add_edge!(G1, 1, 3)
-# add_edge!(G1, 2, 3)
-# add_edge!(G1, 4, 5)
-# add_edge!(G1, 5, 6)
-# add_edge!(G1, 6, 4)
-# add_edge!(G1, 1, 7)
-# add_edge!(G1, 2, 4)
-#
-# G2 = deepcopy(G1)
-# add_edge!(G2, 7, 6)
-
-# gplot(G1, nodelabel=1:3)
-# println(nv(G1))
-# println(neighbors(G1,1))
 
 function isthmes_recur!(G, u, visited, disc, low, parent, time, ISM)
     visited[u] = true
@@ -42,7 +24,7 @@ function isthmes_recur!(G, u, visited, disc, low, parent, time, ISM)
     end
 end
 
-function get_isthmes(G)
+function get_isthmes(G,verbose)
     V = nv(G)
     visited = Array{Bool, 1}(V)
     disc = Array{Int, 1}(V)
@@ -58,7 +40,9 @@ function get_isthmes(G)
             isthmes_recur!(G, v, visited, disc, low, parent, 0, ISM)
         end
     end
-    println(ISM)
+    if verbose
+        println(ISM)
+    end
     return ISM
 end
 
@@ -87,7 +71,7 @@ function GetArticulationPoints!(G, i, visited, d, low, depth, parent, artic)
     end
 end
 
-function get_artics(G)
+function get_artics(G,verbose)
     V = nv(G)
     visited = Array{Bool, 1}(V)
     depth = Array{Int, 1}(V)
@@ -103,7 +87,9 @@ function get_artics(G)
             GetArticulationPoints!(G, v, visited, 0, low, depth, parent, artics)
         end
     end
-    println(artics)
+    if verbose
+        println(artics)
+    end
     return artics
 end
 
@@ -115,7 +101,6 @@ function read_txt(Path)
 
         n = size(B,1)
         a = round.(Int,B)
-        # println(a)
 
         return(n,a)
 end
@@ -128,11 +113,13 @@ end
 # G is a graph object
 # n is the number of nodes
 # node is the list of nodes
-function Glouton(Path)
+function Glouton(Path, verbose = false)
     #read data
     n,a = read_txt(Path)
-    println(n)
-    println(a)
+    if verbose
+        println(n)
+        println(a)
+    end
     # create graph G and lists we will use for discovery
     G = create_graph(a)
     # no node is selected yet.
@@ -141,8 +128,8 @@ function Glouton(Path)
     undiscovered = nodes + 1
     println("initialisation with isthmes and branchement")
     # preprocessing  des noeuds de branchement et des isthmes
-    branchements = get_artics(G)
-    isthmes = get_isthmes(G)
+    branchements = get_artics(G, verbose)
+    isthmes = get_isthmes(G, verbose)
     # list all nodes involved in isthmes
     ISMnodes = []
     for edge in isthmes
@@ -184,26 +171,32 @@ function Glouton(Path)
     println("search for good points")
     # continue l'heuristique avec les autres.
     # tant que des nodes sont pas découvertes, je continue à rajouter des nodes.
-    print(undiscovered)
+    if verbose
+        print(undiscovered)
+    end
     while (sum(undiscovered) > 0)
         # print("Encore:")
         # print(sum(undiscovered))
         # println("points a decouvrir")
         bestnode = find_best_node(n, a, undiscovered, nodes)
-        println(bestnode)
+        if verbose
+            println(bestnode)
+        end
         if bestnode != -1
             discovery = neighbors_discovery(n, a, undiscovered,  bestnode)
-            print(discovery)
+            if verbose
+                print(discovery)
+            end
             nodes[bestnode] = 1
             for target in discovery
                 undiscovered[target] = 0
             end
         end
     end
-
-    println(undiscovered)
-    println(nodes)
-
+    if verbose
+        println(undiscovered)
+        println(nodes)
+    end
     # j'ai la liste des noeuds selectionnes pas l'algo ( dans laquelle il y a les noeuds de branchement).
     # Il se trouve que ces noeud sont ordonnés par nombre de feueilles decouvertes.
     # on va creer un squelette à partir de plus cours chemins a partir du premier element de cette liste, vers les autres.
@@ -212,15 +205,21 @@ function Glouton(Path)
     covered = zeros(Int, n)
     newG_tree = Graph(n)
     root = get_root(nodes, n, G)
-    print(root)
+    if verbose
+        print(root)
+    end
     covered[root] = 1
     paths = Dijkstra_paths(G, root)
-    println(paths)
+    if verbose
+        println(paths)
+    end
     for selected in 1:n
         if(nodes[selected] == 1 && selected != root)
             covered[selected] = 1
             thispath = paths[selected]
-            println(thispath)
+            if verbose
+                println(thispath)
+            end
             for j in 2:length(thispath)
                 add_edge!(newG_tree, thispath[j-1], thispath[j])
                 covered[thispath[j-1]] = 1
@@ -232,15 +231,21 @@ function Glouton(Path)
     println("building the rest of the tree")
     #maintenant on va ajouter a cet arbre, le nodes qui n'ont pas été sélectionées.
     for selected in 1:n
-        println(neighbors(newG_tree, selected))
+        if verbose
+            println(neighbors(newG_tree, selected))
+        end
         degree = length(neighbors(newG_tree, selected))
         # degree = degree(newG, selected)
-        println(degree  )
+        if verbose
+            println(degree )
+        end
         # if nodes[selected] == 1 && (degree >= 3 || degree == 1)
         if nodes[selected] == 1
             # theseneighbors = G.vertices[selected].neighbors
             theseneighbors = neighbors(G, selected)
-            println(theseneighbors)
+            if verbose
+                println(theseneighbors)
+            end
             for thisneighbor in theseneighbors
                 if covered[thisneighbor] == 0
                     add_edge!(newG_tree, selected, thisneighbor)
