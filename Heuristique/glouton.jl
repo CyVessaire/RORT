@@ -99,8 +99,8 @@ function read_txt(Path)
 
         B = A[1:size(A,1),:]
 
-        n = size(B,1)
-        a = round.(Int,B)
+        n = size(B,2)
+        a = round.(Int,B[1:n,1:n])
 
         return(n,a)
 end
@@ -126,7 +126,9 @@ function Glouton(Path, verbose = false)
     nodes = zeros(Int,n)
     # all nodes are not discovered yet.
     undiscovered = nodes + 1
-    println("initialisation with isthmes and branchement")
+    if verbose
+        println("initialisation with isthmes and branchement")
+    end
     # preprocessing  des noeuds de branchement et des isthmes
     branchements = get_artics(G, verbose)
     isthmes = get_isthmes(G, verbose)
@@ -168,10 +170,10 @@ function Glouton(Path, verbose = false)
             undiscovered[target] = 0
         end
     end
-    println("search for good points")
+    if verbose
+        println("search for good points")
     # continue l'heuristique avec les autres.
     # tant que des nodes sont pas découvertes, je continue à rajouter des nodes.
-    if verbose
         print(undiscovered)
     end
     while (sum(undiscovered) > 0)
@@ -201,7 +203,9 @@ function Glouton(Path, verbose = false)
     # Il se trouve que ces noeud sont ordonnés par nombre de feueilles decouvertes.
     # on va creer un squelette à partir de plus cours chemins a partir du premier element de cette liste, vers les autres.
     # puis on va rajouter les feuilles en parcourant
-    println("building the skeleton of the tree")
+    if verbose
+        println("building the skeleton of the tree")
+    end
     covered = zeros(Int, n)
     newG_tree = Graph(n)
     root = get_root(nodes, n, G)
@@ -228,7 +232,9 @@ function Glouton(Path, verbose = false)
         end
     end
 
-    println("building the rest of the tree")
+    if verbose
+        println("building the rest of the tree")
+    end
     #maintenant on va ajouter a cet arbre, le nodes qui n'ont pas été sélectionées.
     for selected in 1:n
         if verbose
@@ -254,7 +260,9 @@ function Glouton(Path, verbose = false)
             end
         end
     end
-    println(adjacency_matrix(newG_tree))
+    if verbose
+        println(adjacency_matrix(newG_tree))
+    end
     return newG_tree
 end
 

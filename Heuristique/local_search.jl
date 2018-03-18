@@ -454,7 +454,7 @@ function local_search(adj_ini, adj_tree, apply, verbose)
                             println(i)
                             println("Tree:")
                             println(adj_tree)
-                            return
+                            return adj_tree
                         end
                     end
 
@@ -474,11 +474,14 @@ function local_search(adj_ini, adj_tree, apply, verbose)
                 println("Last Tree:")
                 println(adj_tree)
                 println("No more amelioration possible")
-                v = size(nodes, 1)
-                println("Value = $v")
             end
+            v = size(nodes, 1)
+            println("Value = $v")
+            return adj_tree
         end
     end
+    v = size(nodes, 1)
+    println("Value = $v")
     return adj_tree
 end
 #

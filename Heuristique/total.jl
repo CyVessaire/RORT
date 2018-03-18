@@ -1,8 +1,11 @@
 include("glouton.jl")
 include("local_search.jl")
 
-Path = "testdata.txt"
-n,a = read_txt(Path)
-G = Glouton(Path)
+for i in 1:9
+    Path = "../data/tests/rand1$i.txt"
+    n,a = read_txt(Path)
 
-local_search(a, adjacency_matrix(G), true, true)
+    println(i)
+    @time(G = Glouton(Path, false))
+    @time(local_search(a, adjacency_matrix(G), true, false))
+end
