@@ -3,20 +3,20 @@ using JuMP
 # file to create .dat file for the opl model
 
 for i=1:9
-    str = "../data/tests/test0$(i).txt"
+    str = "../data/tests/rand3$(i).txt"
     println(str)
 
     A = readdlm(str, ' ')
 
-    B = A[1:size(A,1)-1,:]
+    B = A[1:size(A,1),:]
 
-    str = "../data/tests/test0$(i).dat"
+    str = "../data/tests/rand3$(i).dat"
 
     open(str, "w") do io
         writedlm(io, B, ' ')
     end
 
-    open("../data/dat/test0$(i).dat", "w") do io
+    open("../data/dat/rand3$(i).dat", "w") do io
         o=open(str)
         string = "n=$(size(B,1));\n"
         write(io, string)
